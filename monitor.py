@@ -440,12 +440,24 @@ def check_for_new_offers():
         page = 1
         base_url = config.STORE_URL
         
+        # Build URL with filters to reduce pages to scrape
+        # URL parameters from the website:
+        # - leasingp: max monthly price (€)
+        # - order: sort order (1 = price ascending)
+        # - radius: search radius in km
+        # Format: ?leasingp=120&order=1&radius=50
+        price_filter_params = f"leasingp={int(config.MAX_PRICE)}&order=1&radius=50"
+        base_url_with_filter = f"{base_url}?{price_filter_params}"
+        
         while True:
             try:
-                # Try to get page with pagination parameter
-                url = f"{base_url}?page={page}" if page > 1 else base_url
+                # Build URL with pagination and price filter
+                if page == 1:
+                    url = base_url_with_filter
+                else:
+                    url = f"{base_url_with_filter}&page={page}"
                 
-                logger.info(f"Scraping page {page}: {url}")
+                logger.info(f"Scraping page {page} (filtered: max price €{config.MAX_PRICE}, radius 50km): {url}")
                 
                 headers = {
                     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
@@ -469,6 +481,18 @@ def check_for_new_offers():
                 # Filter by price range immediately
                 filtered_page_offers = filter_offers_by_price(page_offers)
                 total_filtered += len(filtered_page_offers)
+                
+                # Early stopping: If all offers on this page are above max price, we've gone past filtered results
+                if page_offers:
+                    all_above_max = all(offer['monthly_price'] > config.MAX_PRICE for offer in page_offers)
+                    if all_above_max:
+                        logger.info(f"All offers on page {page} are above max price (€{config.MAX_PRICE}). Stopping early.")
+                        break
+                    
+                    # Also stop if we've gone many pages without finding any in-range offers
+                    if page > 10 and total_filtered == 0:
+                        logger.info(f"Scraped {page} pages with no offers in range. Stopping early.")
+                        break
                 
                 if filtered_page_offers:
                     logger.info(f"  → {len(filtered_page_offers)} offers in price range (€{config.MIN_PRICE}-€{config.MAX_PRICE}) with {config.KM_ALLOWANCE} km/year on this page")
@@ -521,8 +545,11 @@ def check_for_new_offers():
                 
                 page += 1
                 
-                if page > 100:
-                    logger.warning("Reached page limit (100), stopping")
+                # Limit pages to prevent very long runs (adjust based on typical filtered results)
+                # If using price filter, should be much fewer pages
+                max_pages = 50  # Reasonable limit for filtered results
+                if page > max_pages:
+                    logger.warning(f"Reached page limit ({max_pages}), stopping. If you're getting many pages, consider using website's price filter.")
                     break
                 
                 time.sleep(2)
@@ -578,4 +605,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
