@@ -9,14 +9,18 @@ DISCORD_WEBHOOK_URL = os.getenv(
     "https://discord.com/api/webhooks/1439725920121389076/VpPM8C4yAAjHZu4LZUdrM0GEGVfvxMkhLkWn6OBeOkN_5AIfHhgVWRmlYnnktOm291Qa"
 )
 
+# Discord user ID for mentions (optional - leave empty to disable mentions)
+# To find your Discord user ID: Enable Developer Mode in Discord settings, then right-click your name and "Copy ID"
+DISCORD_USER_ID = os.getenv("DISCORD_USER_ID", "318472879799009281")
+
 # Price range (monthly lease rate in euros)
 # Handle empty strings from environment variables
 _min_price = os.getenv("MIN_PRICE", "50")
 _min_price = _min_price if _min_price and _min_price.strip() else "50"
 MIN_PRICE = float(_min_price)
 
-_max_price = os.getenv("MAX_PRICE", "120")
-_max_price = _max_price if _max_price and _max_price.strip() else "120"
+_max_price = os.getenv("MAX_PRICE", "151")
+_max_price = _max_price if _max_price and _max_price.strip() else "151"
 MAX_PRICE = float(_max_price)
 
 # Yearly kilometer allowance (km per year)
@@ -29,8 +33,9 @@ _check_interval = os.getenv("CHECK_INTERVAL", "1800")
 _check_interval = _check_interval if _check_interval and _check_interval.strip() else "1800"
 CHECK_INTERVAL = int(_check_interval)
 
-# Peugeot store URL
-STORE_URL = "https://financing.peugeot.store/bestand"
+# Peugeot store URL with filters: 24 months / 15,000 km and 24 months / 20,000 km, max price 151€, radius 50km
+STORE_URL = "https://financing.peugeot.store/bestand?leasingp=151&combination=24_15000%2C24_20000&radius=50"
 
 # Storage file for tracking seen offers
 OFFERS_FILE = "offers.json"
+
